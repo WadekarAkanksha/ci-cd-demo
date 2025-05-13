@@ -1,30 +1,34 @@
 pipeline {
-  agent any
-  tools {
-      go 'gotest'
-  }
-  environment {
-      GO111MODULE='on'
-  }
-  
-  stages {
-    stage('Test') {
-      steps {
-        git 'https://github.com/WadekarAkanksha/ci-cd-demo.git'
-        sh 'go test ./...'
-      }
-    }
-    stage('Build') {
-        steps {
-        git 'https://github.com/WadekarAkanksha/ci-cd-demo.git'
-        sh 'go build .'
-        }
-    }
-    stage('Run') {
-        steps {
-            sh 'cd /var/lib/jenkins/workspace/full-cicd-go && go-webapp-sample &'
-        }
-    }
+    agent any
 
-  }
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build and Test') {
+            steps {
+                sh './gradlew clean test'
+            }
+        }
+
+        stage('Publish Test Results') {
+            steps {
+                junit 'build/test-results/test/*.xml'
+            }
+        }
+
+        stage('Publish HTML Report') {
+            steps {
+                publishHTML(target: [
+                    reportName : 'Unit Test Report',
+                    reportDir  : 'build/reports/tests/test',
+                    reportFiles: 'index.html',
+                    keepAll    : true
+                ])
+            }
+        }
+    }
 }
